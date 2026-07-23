@@ -1,0 +1,79 @@
+{
+  "id": "openclaw-cursor-provider",
+  "name": "OpenClaw Cursor Provider",
+  "description": "Cursor models for OpenClaw via official @cursor/sdk (local runtime, no CLI proxy).",
+  "providers": ["cursor"],
+  "modelSupport": {
+    "modelPrefixes": ["cursor/"]
+  },
+  "setup": {
+    "providers": [
+      {
+        "id": "cursor",
+        "envVars": ["CURSOR_API_KEY"]
+      }
+    ]
+  },
+  "providerAuthChoices": [
+    {
+      "provider": "cursor",
+      "method": "api-key",
+      "choiceId": "cursor-api-key",
+      "choiceLabel": "Cursor API key",
+      "groupId": "cursor",
+      "groupLabel": "Cursor",
+      "cliFlag": "--cursor-api-key",
+      "cliOption": "--cursor-api-key <key>",
+      "cliDescription": "Cursor API key (CURSOR_API_KEY)"
+    }
+  ],
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "workspaceDir": {
+        "type": "string",
+        "description": "Default cwd for local Cursor agents. Falls back to agents.defaults.workspace."
+      },
+      "strictToolLoop": {
+        "type": "boolean",
+        "default": true,
+        "description": "Reject Cursor runs that execute built-in tools internally (force OpenClaw harness loop)."
+      },
+      "chatMode": {
+        "type": "string",
+        "enum": ["auto", "always", "never"],
+        "default": "auto",
+        "description": "auto = slim chat-only turns without tools; never = always full prompt + tools (legacy)."
+      },
+      "slimSystemMaxChars": {
+        "type": "number",
+        "minimum": 500,
+        "default": 2000,
+        "description": "Max chars of system prompt in chat-only (slim) turns."
+      },
+      "maxHistoryMessages": {
+        "type": "number",
+        "minimum": 2,
+        "default": 6,
+        "description": "Message history cap for slim prompts."
+      },
+      "includeThinkingInPrompt": {
+        "type": "boolean",
+        "default": false,
+        "description": "Include [assistant thinking] blocks when building tool-mode prompts."
+      },
+      "pricing": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "USD per 1M tokens for OpenClaw billing (calculateCost).",
+        "properties": {
+          "input": { "type": "number", "minimum": 0 },
+          "output": { "type": "number", "minimum": 0 },
+          "cacheRead": { "type": "number", "minimum": 0 },
+          "cacheWrite": { "type": "number", "minimum": 0 }
+        }
+      }
+    }
+  }
+}

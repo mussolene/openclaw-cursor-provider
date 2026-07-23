@@ -1,0 +1,70 @@
+{
+  "name": "openclaw-cursor-provider",
+  "version": "0.1.0",
+  "description": "Cursor SDK model provider for OpenClaw, with native streaming and OpenClaw-owned tool execution.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Maxim Matvienko",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mussolene/openclaw-cursor-provider.git"
+  },
+  "homepage": "https://github.com/mussolene/openclaw-cursor-provider#readme",
+  "bugs": {
+    "url": "https://github.com/mussolene/openclaw-cursor-provider/issues"
+  },
+  "keywords": [
+    "openclaw",
+    "cursor",
+    "cursor-sdk",
+    "model-provider",
+    "agent"
+  ],
+  "files": [
+    "dist",
+    "openclaw.plugin.json",
+    "README.md",
+    "RUNBOOK.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@cursor/sdk": "1.0.24"
+  },
+  "openclaw": {
+    "extensions": [
+      "./dist/index.js"
+    ],
+    "providers": [
+      "cursor"
+    ],
+    "install": {
+      "localPath": "extensions/openclaw-cursor-provider",
+      "defaultChoice": "local"
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "typescript": "^5.9.3"
+  },
+  "peerDependencies": {
+    "openclaw": ">=2026.7.1"
+  },
+  "peerDependenciesMeta": {
+    "openclaw": {
+      "optional": true
+    }
+  },
+  "scripts": {
+    "build": "tsc --noEmit false --outDir dist --rootDir .",
+    "prepare": "npm run build",
+    "prepack": "npm run check",
+    "pretest": "npm run build",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test test/*.test.mjs",
+    "check": "npm run typecheck && npm test",
+    "pack:check": "npm pack --dry-run"
+  }
+}
