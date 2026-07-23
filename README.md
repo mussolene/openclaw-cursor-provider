@@ -38,7 +38,7 @@ Install a tagged release directly from GitHub:
 
 ```bash
 openclaw plugins install \
-  "git+https://github.com/mussolene/openclaw-cursor-provider.git#v0.1.0" \
+  "git+https://github.com/mussolene/openclaw-cursor-provider.git#v0.1.1" \
   --force
 ```
 

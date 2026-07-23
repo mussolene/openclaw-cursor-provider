@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented here.
 
+## 0.1.1 - 2026-07-23
+
+- Finished the naming migration to `openclaw-cursor-provider` in runtime logs.
+
 ## 0.1.0 - 2026-07-23
 
 - Added a native Cursor model provider backed by `@cursor/sdk`.

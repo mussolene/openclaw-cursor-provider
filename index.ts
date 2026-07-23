@@ -140,7 +140,7 @@ export default definePluginEntry({
     });
 
     api.logger.info(
-      `Cursor SDK provider registered (workspace=${workspaceDir}, strictToolLoop=${strictToolLoop}, chatMode=${chatModeConfig.chatMode}, pricing input=${pricing.input}/1M)`,
+      `OpenClaw Cursor provider registered (workspace=${workspaceDir}, strictToolLoop=${strictToolLoop}, chatMode=${chatModeConfig.chatMode}, pricing input=${pricing.input}/1M)`,
     );
   },
 });
