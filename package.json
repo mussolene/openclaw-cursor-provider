@@ -1,6 +1,6 @@
 {
   "name": "openclaw-cursor-provider",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Cursor SDK model provider for OpenClaw, with native streaming and OpenClaw-owned tool execution.",
   "type": "module",
   "license": "MIT",

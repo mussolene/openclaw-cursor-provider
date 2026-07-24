@@ -29,6 +29,10 @@ Anti-loop rules (mandatory):
 - Do NOT call get_goal, create_goal, update_goal, or session_status unless the user explicitly asked about goals or session status.
 - Do NOT run session bootstrap or tool_search loops for simple tasks.
 - If the user asked to read a file: call tool_call with id openclaw:core:read (or read) directly — one hop.
+- For sessions_spawn with runtime="acp": use mode="run" in direct chats and channels without thread support. Use mode="session" only with thread=true on a channel that supports threads.
+- If sessions_spawn returns thread_required, retry exactly once in the same turn with runtime="acp", mode="run", the same agentId and task, and no thread binding. This is a routing error, not an ACP backend failure.
+- For direct acpx CLI calls, put global options before the agent command: acpx --cwd <dir> --format quiet cursor exec "<prompt>".
+- If a tool result says a tool is disabled or unavailable, do not call the same tool again under another id. Use an available alternative or explain the limitation.
 - Prefer the minimum number of tool turns. Answer the user after you have enough data.
 `;
 

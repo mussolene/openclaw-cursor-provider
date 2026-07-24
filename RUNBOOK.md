@@ -71,6 +71,20 @@ Gateway log lines:
 [cursor-provider] cursor-provider turn {"toolTurn":false,"sentFullPrompt":false,"promptChars":...}
 ```
 
+## Cursor ACP routing
+
+- Telegram direct chats and other channels without thread support must use
+  `sessions_spawn` with `runtime: "acp"` and `mode: "run"`.
+- Persistent `mode: "session"` requires both `thread: true` and a channel that
+  exposes threads or topics.
+- Treat `thread_required` as a routing error: retry once with `mode: "run"`
+  instead of reporting the ACP backend as unavailable.
+- Direct `acpx` global options precede the agent command:
+
+```bash
+acpx --cwd /path/to/workspace --format quiet cursor exec "prompt"
+```
+
 ### Rollback
 
 Set `chatMode: "never"` to restore legacy behavior (full bootstrap + tools every turn).

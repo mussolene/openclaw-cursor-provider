@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented here.
 
+## 0.1.2 - 2026-07-24
+
+- Added ACP direct-chat routing guidance: use one-shot `mode=run` when threads
+  are unavailable and recover automatically from `thread_required`.
+- Corrected direct `acpx` command ordering and unavailable-tool retry guidance.
+- Added regression coverage for ACP routing rules in provider prompts.
+
 ## 0.1.1 - 2026-07-23
 
 - Finished the naming migration to `openclaw-cursor-provider` in runtime logs.
