@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented here.
 
+## 0.1.3 - 2026-07-25
+
+- Delayed the custom-tool safety response so OpenClaw can intercept and cancel
+  Cursor runs before the model attempts duplicate fallback tool calls.
+
 ## 0.1.2 - 2026-07-24
 
 - Added ACP direct-chat routing guidance: use one-shot `mode=run` when threads
