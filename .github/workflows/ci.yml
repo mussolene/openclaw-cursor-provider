@@ -35,5 +35,8 @@ jobs:
       - name: Check types and tests
         run: npm run check
 
+      - name: Verify committed build
+        run: git diff --exit-code -- dist
+
       - name: Verify package contents
         run: npm run pack:check
