@@ -98,6 +98,21 @@ Gateway log lines:
 acpx --cwd /path/to/workspace --format quiet cursor exec "prompt"
 ```
 
+### OpenClaw 2026.8.2 limitation
+
+OpenClaw 2026.8.2 can complete a nested ACP run successfully and then emit a
+false `Heartbeat check failed` notification while preparing the parent
+continuation. The gateway, Telegram channel, Cursor child, and scheduled
+heartbeat remain healthy. This is an OpenClaw prepared-runtime generation race,
+not a provider or Cursor SDK failure.
+
+- Upstream issue: <https://github.com/openclaw/openclaw/issues/133692>
+- Pending fix: <https://github.com/openclaw/openclaw/pull/133693>
+
+Do not retry the completed child task after this warning. Upgrade OpenClaw when
+the fix is included in a release, restart the gateway, and repeat one cold
+`sessions_spawn` smoke test before removing this note.
+
 ### Rollback
 
 Set `chatMode: "never"` to send the full bootstrap on every turn. Native SDK
