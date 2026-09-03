@@ -1,6 +1,6 @@
 {
   "name": "openclaw-cursor-provider",
-  "version": "0.1.3",
+  "version": "0.2.0",
   "description": "Cursor SDK model provider for OpenClaw, with native streaming and OpenClaw-owned tool execution.",
   "type": "module",
   "license": "MIT",
@@ -22,16 +22,17 @@
   ],
   "files": [
     "dist",
+    "test/idle-smoke.mjs",
     "openclaw.plugin.json",
     "README.md",
     "RUNBOOK.md",
     "LICENSE"
   ],
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.13.0"
   },
   "dependencies": {
-    "@cursor/sdk": "1.0.27"
+    "@cursor/sdk": "1.0.30"
   },
   "openclaw": {
     "extensions": [
@@ -52,6 +53,11 @@
   "peerDependencies": {
     "openclaw": ">=2026.7.1"
   },
+  "overrides": {
+    "@connectrpc/connect-node": {
+      "undici": "6.28.0"
+    }
+  },
   "peerDependenciesMeta": {
     "openclaw": {
       "optional": true
@@ -64,6 +70,7 @@
     "pretest": "npm run build",
     "typecheck": "tsc --noEmit",
     "test": "node --test test/*.test.mjs",
+    "test:idle": "node test/idle-smoke.mjs",
     "check": "npm run typecheck && npm test",
     "pack:check": "npm pack --dry-run"
   }

@@ -63,6 +63,12 @@
         "default": false,
         "description": "Include [assistant thinking] blocks when building tool-mode prompts."
       },
+      "workspaceScanCacheTtlMs": {
+        "type": "number",
+        "minimum": 0,
+        "default": 300000,
+        "description": "How long Cursor SDK reuses workspace scans for rules, skills, AGENTS.md, and ignore files."
+      },
       "pricing": {
         "type": "object",
         "additionalProperties": false,

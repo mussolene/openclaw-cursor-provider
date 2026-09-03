@@ -2,6 +2,18 @@
 
 All notable changes to this project are documented here.
 
+## 0.2.0 - 2026-09-03
+
+- Updated `@cursor/sdk` to 1.0.30 for in-process token refresh after long idle
+  periods.
+- Restricted Cursor built-in tools before each local agent starts: tool turns
+  allow only the MCP family used for OpenClaw custom tools, while chat turns
+  allow no built-in tools.
+- Added configurable workspace scan caching with a five-minute default.
+- Added a long-idle SDK smoke test and regression tests for tool restrictions.
+- Overrode the vulnerable transitive `undici` release with 6.28.0.
+- Raised the minimum Node.js version to 22.13 to match Cursor SDK 1.0.30.
+
 ## 0.1.3 - 2026-07-25
 
 - Delayed the custom-tool safety response so OpenClaw can intercept and cancel

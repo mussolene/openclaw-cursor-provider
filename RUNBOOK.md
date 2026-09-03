@@ -13,6 +13,7 @@ Plugin path: managed by OpenClaw from the tagged GitHub repository.
 | `maxHistoryMessages` | `6` | History cap in slim prompts |
 | `includeThinkingInPrompt` | `false` | Omit `[assistant thinking]` from tool-mode prompts |
 | `strictToolLoop` | `true` | Block Cursor builtin tools in tool mode |
+| `workspaceScanCacheTtlMs` | `300000` | Reuse workspace scans to reduce repeat startup cost |
 
 ### How turns are classified
 
@@ -42,26 +43,38 @@ Chat-only turns use fresh `Agent.create` (no `Agent.resume`) to avoid cumulative
 
 ```bash
 # pong
-openclaw agent --local --agent main \
+openclaw agent --agent main \
   --session-key agent:main:test-slim-pong-1 \
   --model cursor/auto -m "ping" --json
 
-openclaw agent --local --agent main \
+openclaw agent --agent main \
   --session-key agent:main:test-slim-pong-1 \
   --model cursor/auto -m "pong" --json
 
 # read → toolUse
-openclaw agent --local --agent main \
+openclaw agent --agent main \
   --session-key agent:main:test-slim-read-1 \
   --model cursor/auto -m "прочитай SOUL.md одной фразой" --json
 
 # chat-only (no false positive on «git»)
-openclaw agent --local --agent main \
+openclaw agent --agent main \
   --session-key agent:main:test-slim-git-chat-1 \
   --model cursor/auto -m "расскажи что такое git" --json
 ```
 
 Check `usage.totalTokens` and `usage.cost.total` in JSON output.
+
+### Long-idle SDK smoke test
+
+Run this after an SDK update to verify that the same Node process can send a
+second turn after the exchanged Cursor token would previously expire:
+
+```bash
+CURSOR_API_KEY=... npm run test:idle
+```
+
+The default wait is 70 minutes. Use `CURSOR_IDLE_SMOKE_MS=1000` only for a
+short plumbing check; it does not validate token refresh.
 
 ### Debug logs
 
@@ -85,6 +98,22 @@ Gateway log lines:
 acpx --cwd /path/to/workspace --format quiet cursor exec "prompt"
 ```
 
+### OpenClaw 2026.8.2 limitation
+
+OpenClaw 2026.8.2 can complete a nested ACP run successfully and then emit a
+false `Heartbeat check failed` notification while preparing the parent
+continuation. The gateway, Telegram channel, Cursor child, and scheduled
+heartbeat remain healthy. This is an OpenClaw prepared-runtime generation race,
+not a provider or Cursor SDK failure.
+
+- Upstream issue: <https://github.com/openclaw/openclaw/issues/133692>
+- Pending fix: <https://github.com/openclaw/openclaw/pull/133693>
+
+Do not retry the completed child task after this warning. Upgrade OpenClaw when
+the fix is included in a release, restart the gateway, and repeat one cold
+`sessions_spawn` smoke test before removing this note.
+
 ### Rollback
 
-Set `chatMode: "never"` to restore legacy behavior (full bootstrap + tools every turn).
+Set `chatMode: "never"` to send the full bootstrap on every turn. Native SDK
+tool restrictions remain enabled in every mode.
