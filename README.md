@@ -21,13 +21,13 @@ This is a community plugin. It is not an official Cursor or OpenClaw project.
 - Persistent tool-mode sessions and fresh lightweight chat-only turns.
 - Configurable prompt slimming, history limits, strict tool-loop enforcement,
   and cost estimates.
-- Node.js 20 or newer; tested on Node.js 20, 22, and 24.
+- Node.js 22.13 or newer; tested on Node.js 22 and 24.
 
 ## Requirements
 
 - OpenClaw `2026.7.1` or newer.
 - A Cursor API key with access to the Cursor Agent SDK.
-- Node.js 20 or newer.
+- Node.js 22.13 or newer.
 
 The Cursor SDK is distributed under its own license and terms. Review those
 terms before using this plugin.
@@ -38,7 +38,7 @@ Install a tagged release directly from GitHub:
 
 ```bash
 openclaw plugins install \
-  "git+https://github.com/mussolene/openclaw-cursor-provider.git#v0.1.1" \
+  "git:github.com/mussolene/openclaw-cursor-provider@v0.2.1" \
   --force
 ```
 
@@ -122,7 +122,10 @@ The idle smoke test waits 70 minutes by default. Override the wait with
 `CURSOR_IDLE_SMOKE_MS` for a shorter plumbing check.
 
 `npm run check` type-checks the plugin, builds `dist/`, and runs the Node.js
-test suite. CI repeats this on supported Node.js 22 and 24 releases.
+test suite. CI repeats this on supported Node.js 22 and 24 releases and verifies
+that the committed `dist/` matches the TypeScript sources. OpenClaw Git installs
+dependencies with lifecycle scripts disabled, so tagged releases must contain
+the compiled entry point.
 
 ## Security Model
 

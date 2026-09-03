@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented here.
 
+## 0.2.1 - 2026-09-03
+
+- Committed the compiled `dist/` entry point required by OpenClaw Git installs.
+- Added CI verification that committed build output matches TypeScript sources.
+- Corrected the documented Git install syntax and Node.js requirement.
+
 ## 0.2.0 - 2026-09-03
 
 - Updated `@cursor/sdk` to 1.0.30 for in-process token refresh after long idle
