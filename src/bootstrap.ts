@@ -1,6 +1,7 @@
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { configureCursorSdk } from "@cursor/sdk";
+import type { CursorSdkRuntimeConfig } from "./config.js";
 
 let initialized = false;
 
@@ -14,12 +15,15 @@ function resolveBundledRipgrep(): string | undefined {
   }
 }
 
-export function ensureCursorSdkBootstrapped(): void {
+export function ensureCursorSdkBootstrapped(config?: CursorSdkRuntimeConfig): void {
   if (initialized) return;
   initialized = true;
 
   configureCursorSdk({
-    local: { useHttp1ForAgent: true },
+    local: {
+      useHttp1ForAgent: true,
+      workspaceScanCacheTtlMs: config?.workspaceScanCacheTtlMs,
+    },
   });
 
   const rg = resolveBundledRipgrep();

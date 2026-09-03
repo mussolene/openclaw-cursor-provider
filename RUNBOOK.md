@@ -13,6 +13,7 @@ Plugin path: managed by OpenClaw from the tagged GitHub repository.
 | `maxHistoryMessages` | `6` | History cap in slim prompts |
 | `includeThinkingInPrompt` | `false` | Omit `[assistant thinking]` from tool-mode prompts |
 | `strictToolLoop` | `true` | Block Cursor builtin tools in tool mode |
+| `workspaceScanCacheTtlMs` | `300000` | Reuse workspace scans to reduce repeat startup cost |
 
 ### How turns are classified
 
@@ -42,26 +43,38 @@ Chat-only turns use fresh `Agent.create` (no `Agent.resume`) to avoid cumulative
 
 ```bash
 # pong
-openclaw agent --local --agent main \
+openclaw agent --agent main \
   --session-key agent:main:test-slim-pong-1 \
   --model cursor/auto -m "ping" --json
 
-openclaw agent --local --agent main \
+openclaw agent --agent main \
   --session-key agent:main:test-slim-pong-1 \
   --model cursor/auto -m "pong" --json
 
 # read → toolUse
-openclaw agent --local --agent main \
+openclaw agent --agent main \
   --session-key agent:main:test-slim-read-1 \
   --model cursor/auto -m "прочитай SOUL.md одной фразой" --json
 
 # chat-only (no false positive on «git»)
-openclaw agent --local --agent main \
+openclaw agent --agent main \
   --session-key agent:main:test-slim-git-chat-1 \
   --model cursor/auto -m "расскажи что такое git" --json
 ```
 
 Check `usage.totalTokens` and `usage.cost.total` in JSON output.
+
+### Long-idle SDK smoke test
+
+Run this after an SDK update to verify that the same Node process can send a
+second turn after the exchanged Cursor token would previously expire:
+
+```bash
+CURSOR_API_KEY=... npm run test:idle
+```
+
+The default wait is 70 minutes. Use `CURSOR_IDLE_SMOKE_MS=1000` only for a
+short plumbing check; it does not validate token refresh.
 
 ### Debug logs
 
@@ -87,4 +100,5 @@ acpx --cwd /path/to/workspace --format quiet cursor exec "prompt"
 
 ### Rollback
 
-Set `chatMode: "never"` to restore legacy behavior (full bootstrap + tools every turn).
+Set `chatMode: "never"` to send the full bootstrap on every turn. Native SDK
+tool restrictions remain enabled in every mode.

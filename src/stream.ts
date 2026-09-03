@@ -1,4 +1,10 @@
-import { Agent, CursorAgentError, type InteractionUpdate, type SDKAgent, type TurnEndedUpdate } from "@cursor/sdk";
+import {
+  Agent,
+  CursorAgentError,
+  type InteractionUpdate,
+  type SDKAgent,
+  type TurnEndedUpdate,
+} from "@cursor/sdk";
 import {
   createAssistantMessageEventStream,
   type AssistantMessage,
@@ -12,7 +18,7 @@ import {
 } from "openclaw/plugin-sdk/llm";
 import { ensureCursorSdkBootstrapped } from "./bootstrap.js";
 import type { ChatModeConfig } from "./config.js";
-import { DEFAULT_CHAT_MODE_CONFIG } from "./config.js";
+import { buildCursorAgentOptions, DEFAULT_CHAT_MODE_CONFIG } from "./config.js";
 import { conversationHadInternalTools } from "./conversation-audit.js";
 import { needsTools } from "./intent.js";
 import { buildCursorFollowUpPrompt, buildCursorPrompt, buildSlimCursorPrompt, shouldSendFullPrompt } from "./prompt.js";
@@ -109,26 +115,19 @@ async function resolveAgent(params: {
   sessionId?: string;
   chatOnly?: boolean;
 }): Promise<SDKAgent> {
+  const options = buildCursorAgentOptions(params);
   if (!params.chatOnly && params.sessionId) {
     const existing = await getCursorSession(params.sessionId);
     if (existing?.agentId) {
       try {
-        return await Agent.resume(existing.agentId, {
-          apiKey: params.apiKey,
-          model: { id: params.modelId },
-          local: { cwd: params.cwd, settingSources: [] },
-        });
+        return await Agent.resume(existing.agentId, options);
       } catch {
         await deleteCursorSession(params.sessionId);
       }
     }
   }
 
-  return Agent.create({
-    apiKey: params.apiKey,
-    model: { id: params.modelId },
-    local: { cwd: params.cwd, settingSources: [] },
-  });
+  return Agent.create(options);
 }
 
 async function touchSession(

@@ -5,7 +5,7 @@ import type { Model } from "openclaw/plugin-sdk/llm";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { ensureCursorSdkBootstrapped } from "./src/bootstrap.js";
-import { resolveChatModeConfig } from "./src/config.js";
+import { resolveChatModeConfig, resolveCursorSdkRuntimeConfig } from "./src/config.js";
 import { API_KEY_ENV, MODEL_DEFAULTS, PLUGIN_ID, PROVIDER_ID } from "./src/constants.js";
 import {
   buildProviderConfig,
@@ -53,12 +53,13 @@ export default definePluginEntry({
   description:
     "Cursor via @cursor/sdk — OpenClaw-native provider (tool loop, sessions, billing, full system prompt).",
   register(api: ProviderRegisterApi) {
-    ensureCursorSdkBootstrapped();
     const workspaceDir = resolveWorkspace(api);
     const pluginConfig = api.pluginConfig as Record<string, unknown> | undefined;
     const pricing = resolvePricingFromConfig(pluginConfig);
     const strictToolLoop = resolveStrictToolLoop(pluginConfig);
     const chatModeConfig = resolveChatModeConfig(pluginConfig);
+    const sdkRuntimeConfig = resolveCursorSdkRuntimeConfig(pluginConfig);
+    ensureCursorSdkBootstrapped(sdkRuntimeConfig);
 
     const applyModelPricing = (model: Model): Model => ({
       ...model,
@@ -140,7 +141,7 @@ export default definePluginEntry({
     });
 
     api.logger.info(
-      `OpenClaw Cursor provider registered (workspace=${workspaceDir}, strictToolLoop=${strictToolLoop}, chatMode=${chatModeConfig.chatMode}, pricing input=${pricing.input}/1M)`,
+      `OpenClaw Cursor provider registered (workspace=${workspaceDir}, strictToolLoop=${strictToolLoop}, chatMode=${chatModeConfig.chatMode}, workspaceScanCacheTtlMs=${sdkRuntimeConfig.workspaceScanCacheTtlMs}, pricing input=${pricing.input}/1M)`,
     );
   },
 });

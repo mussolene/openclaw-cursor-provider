@@ -83,7 +83,8 @@ Plugin settings live under
           "strictToolLoop": true,
           "slimSystemMaxChars": 2000,
           "maxHistoryMessages": 6,
-          "includeThinkingInPrompt": false
+          "includeThinkingInPrompt": false,
+          "workspaceScanCacheTtlMs": 300000
         }
       }
     }
@@ -98,6 +99,7 @@ Plugin settings live under
 | `slimSystemMaxChars` | `2000` | Maximum system-prompt characters in lightweight turns. |
 | `maxHistoryMessages` | `6` | Maximum recent messages in lightweight turns. |
 | `includeThinkingInPrompt` | `false` | Include saved thinking blocks in tool-mode follow-ups. |
+| `workspaceScanCacheTtlMs` | `300000` | Reuse Cursor workspace scans for this many milliseconds. Set `0` to disable caching. |
 | `pricing` | estimate | Override per-million-token input, output, cache-read, and cache-write rates. |
 
 See [RUNBOOK.md](RUNBOOK.md) for operational details and smoke tests.
@@ -110,14 +112,24 @@ npm run check
 npm run pack:check
 ```
 
+To verify SDK token refresh in one long-lived Node process, run:
+
+```bash
+CURSOR_API_KEY=... npm run test:idle
+```
+
+The idle smoke test waits 70 minutes by default. Override the wait with
+`CURSOR_IDLE_SMOKE_MS` for a shorter plumbing check.
+
 `npm run check` type-checks the plugin, builds `dist/`, and runs the Node.js
-test suite. CI repeats this on Node.js 20, 22, and 24.
+test suite. CI repeats this on supported Node.js 22 and 24 releases.
 
 ## Security Model
 
-The plugin passes only the tools already registered for the current OpenClaw
-turn. Cursor-native built-in tools are rejected when `strictToolLoop` is
-enabled. Tool execution remains subject to the OpenClaw gateway's policy,
+The plugin restricts Cursor SDK tool turns to the MCP family that carries
+OpenClaw-provided custom tools. Chat-only turns receive no built-in tools.
+The `strictToolLoop` audit remains a second boundary against unexpected SDK
+behavior. Tool execution remains subject to the OpenClaw gateway's policy,
 sandbox, approvals, and allowlists.
 
 This boundary does not make an unsafe OpenClaw configuration safe. Keep
