@@ -14,10 +14,10 @@ export function resolveChatModeConfig(pluginConfig) {
         : DEFAULT_CHAT_MODE_CONFIG.chatMode;
     return {
         chatMode: resolvedMode,
-        slimSystemMaxChars: typeof pluginConfig?.slimSystemMaxChars === "number" && pluginConfig.slimSystemMaxChars > 0
+        slimSystemMaxChars: typeof pluginConfig?.slimSystemMaxChars === "number" && Number.isSafeInteger(pluginConfig.slimSystemMaxChars) && pluginConfig.slimSystemMaxChars > 0
             ? pluginConfig.slimSystemMaxChars
             : DEFAULT_CHAT_MODE_CONFIG.slimSystemMaxChars,
-        maxHistoryMessages: typeof pluginConfig?.maxHistoryMessages === "number" && pluginConfig.maxHistoryMessages > 0
+        maxHistoryMessages: typeof pluginConfig?.maxHistoryMessages === "number" && Number.isSafeInteger(pluginConfig.maxHistoryMessages) && pluginConfig.maxHistoryMessages > 0
             ? pluginConfig.maxHistoryMessages
             : DEFAULT_CHAT_MODE_CONFIG.maxHistoryMessages,
         includeThinkingInPrompt: pluginConfig?.includeThinkingInPrompt === true,

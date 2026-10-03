@@ -50,3 +50,9 @@ test("SDK workspace scan cache can be tuned or disabled", () => {
     workspaceScanCacheTtlMs: 0,
   });
 });
+
+for (const value of [Infinity, NaN, 1.5]) {
+  test(`chat limits reject ${value}`, () => {
+    assert.deepEqual(resolveChatModeConfig({ slimSystemMaxChars: value, maxHistoryMessages: value }), DEFAULT_CHAT_MODE_CONFIG);
+  });
+}

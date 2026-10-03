@@ -70,14 +70,14 @@ async function resolveAgent(params) {
         const existing = await getCursorSession(params.sessionId);
         if (existing?.agentId) {
             try {
-                return await Agent.resume(existing.agentId, options);
+                return { agent: await Agent.resume(existing.agentId, options), resumed: true };
             }
             catch {
                 await deleteCursorSession(params.sessionId);
             }
         }
     }
-    return Agent.create(options);
+    return { agent: await Agent.create(options), resumed: false };
 }
 async function touchSession(sessionId, agentId, modelId, bootstrapped) {
     if (!sessionId)
@@ -228,7 +228,9 @@ export function createCursorSdkStreamFn(params) {
             };
             const finalizeText = () => {
                 if (!textStarted && accumulatedText) {
-                    appendTextDelta(accumulatedText);
+                    const text = accumulatedText;
+                    accumulatedText = "";
+                    appendTextDelta(text);
                 }
                 if (textStarted) {
                     stream.push({
@@ -286,9 +288,17 @@ export function createCursorSdkStreamFn(params) {
                 const sessionRecord = sessionId ? await getCursorSession(sessionId) : undefined;
                 toolTurn = needsTools(openClawContext, chatModeConfig);
                 const customTools = toolTurn ? buildOpenClawCustomTools(openClawContext.tools) : {};
+                const resolved = await resolveAgent({
+                    apiKey,
+                    modelId,
+                    cwd,
+                    sessionId,
+                    chatOnly: !toolTurn,
+                });
+                agent = resolved.agent;
                 sentFullPrompt = shouldSendFullPrompt({
                     context: openClawContext,
-                    sessionBootstrapped: sessionRecord?.bootstrapped === true,
+                    sessionBootstrapped: resolved.resumed && sessionRecord?.bootstrapped === true,
                     config: chatModeConfig,
                 });
                 const prompt = sentFullPrompt
@@ -303,13 +313,6 @@ export function createCursorSdkStreamFn(params) {
                     promptChars,
                     chatMode: chatModeConfig.chatMode,
                     customToolCount: Object.keys(customTools).length,
-                });
-                agent = await resolveAgent({
-                    apiKey,
-                    modelId,
-                    cwd,
-                    sessionId,
-                    chatOnly: !toolTurn,
                 });
                 activeRun = await agent.send(prompt, {
                     model: { id: modelId },
@@ -421,7 +424,7 @@ export function createCursorSdkStreamFn(params) {
                 finalizeThinking();
                 finalizeText();
                 if (agent && sessionId) {
-                    const bootstrapped = sessionRecord?.bootstrapped === true || (toolTurn && sentFullPrompt);
+                    const bootstrapped = (resolved.resumed && sessionRecord?.bootstrapped === true) || (toolTurn && sentFullPrompt && pendingStop.kind !== "error");
                     if (toolTurn) {
                         await touchSession(sessionId, agent.agentId, modelId, bootstrapped);
                     }
