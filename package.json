@@ -32,7 +32,7 @@
     "node": ">=22.13.0"
   },
   "dependencies": {
-    "@cursor/sdk": "1.0.31"
+    "@cursor/sdk": "1.0.34"
   },
   "openclaw": {
     "extensions": [
@@ -52,11 +52,6 @@
   },
   "peerDependencies": {
     "openclaw": ">=2026.7.1"
-  },
-  "overrides": {
-    "@connectrpc/connect-node": {
-      "undici": "6.28.1"
-    }
   },
   "peerDependenciesMeta": {
     "openclaw": {
