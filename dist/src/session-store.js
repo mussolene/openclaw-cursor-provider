@@ -1,38 +1,39 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 const STORE_DIR = join(homedir(), ".openclaw", "cursor-provider");
 const STORE_PATH = join(STORE_DIR, "sessions.json");
-let cache;
+let loading;
 let writeChain = Promise.resolve();
 async function loadStore() {
-    if (cache)
-        return cache;
-    try {
-        const raw = await readFile(STORE_PATH, "utf8");
-        const parsed = JSON.parse(raw);
-        if (parsed?.version === 1 && parsed.sessions && typeof parsed.sessions === "object") {
-            cache = parsed;
-            return cache;
+    if (loading)
+        return loading;
+    loading = (async () => {
+        try {
+            const raw = await readFile(STORE_PATH, "utf8");
+            const parsed = JSON.parse(raw);
+            if (parsed?.version === 1 && parsed.sessions && typeof parsed.sessions === "object") {
+                return { version: 1, sessions: Object.assign(Object.create(null), parsed.sessions) };
+            }
         }
-    }
-    catch {
-        /* fresh store */
-    }
-    cache = { version: 1, sessions: {} };
-    return cache;
+        catch {
+            /* fresh store */
+        }
+        return { version: 1, sessions: Object.create(null) };
+    })();
+    return loading;
 }
 async function persistStore(store) {
     await mkdir(STORE_DIR, { recursive: true, mode: 0o700 });
-    await writeFile(STORE_PATH, `${JSON.stringify(store, null, 2)}\n`, {
+    const temporaryPath = `${STORE_PATH}.${process.pid}.tmp`;
+    await writeFile(temporaryPath, `${JSON.stringify(store, null, 2)}\n`, {
         encoding: "utf8",
         mode: 0o600,
     });
+    await rename(temporaryPath, STORE_PATH);
 }
 function queuePersist(store) {
-    writeChain = writeChain
-        .then(() => persistStore(store))
-        .catch(() => undefined);
+    writeChain = writeChain.catch(() => undefined).then(() => persistStore(store));
     return writeChain;
 }
 export async function getCursorSession(sessionId) {
