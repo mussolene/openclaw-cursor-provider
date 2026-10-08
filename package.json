@@ -32,7 +32,7 @@
     "node": ">=22.13.0"
   },
   "dependencies": {
-    "@cursor/sdk": "1.0.34"
+    "@cursor/sdk": "1.0.36"
   },
   "openclaw": {
     "extensions": [
