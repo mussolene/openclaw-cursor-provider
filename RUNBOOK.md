@@ -53,6 +53,10 @@ the launch and let OpenClaw deliver completion automatically. Do not add
 backend failure. Use registered OpenClaw discovery tools instead of Cursor IDE
 meta-tools such as `GetDynamicTools`.
 
+Subagent completion events start a fresh SDK conversation with canonical
+OpenClaw history. The parent SDK transcript does not own these external events;
+ordinary user follow-ups can still resume a completed SDK conversation.
+
 ### Smoke tests (isolated sessions — NOT live Telegram)
 
 ```bash

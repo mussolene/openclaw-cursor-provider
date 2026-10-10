@@ -70,7 +70,7 @@ async function resolveAgent(params) {
         const existing = await getCursorSession(params.sessionId);
         // A cancelled SDK tool run retains an interrupted native tool transcript.
         // Rebuild from OpenClaw's canonical messages instead of resuming that run.
-        if (existing?.agentId && !existing.toolHandoffPending && !params.afterToolResult) {
+        if (existing?.agentId && !existing.toolHandoffPending && !params.afterToolResult && !params.afterSubagentCompletion) {
             try {
                 return { agent: await Agent.resume(existing.agentId, options), resumed: true };
             }
@@ -291,13 +291,24 @@ export function createCursorSdkStreamFn(params) {
                 const sessionRecord = sessionId ? await getCursorSession(sessionId) : undefined;
                 toolTurn = needsTools(openClawContext, chatModeConfig);
                 const customTools = toolTurn ? buildOpenClawCustomTools(openClawContext.tools) : {};
+                const lastMessage = openClawContext.messages?.at(-1);
+                const lastUserText = lastMessage?.role === "user"
+                    ? typeof lastMessage.content === "string"
+                        ? lastMessage.content
+                        : lastMessage.content.filter(block => block.type === "text").map(block => block.text).join("\n")
+                    : "";
+                // Completion is owned by OpenClaw, not by the saved SDK conversation.
+                const afterSubagentCompletion = lastUserText.startsWith("<<<BEGIN_OPENCLAW_INTERNAL_CONTEXT>>>")
+                    && lastUserText.includes("[Internal task completion event]")
+                    && lastUserText.includes("source: subagent");
                 const resolved = await resolveAgent({
                     apiKey,
                     modelId,
                     cwd,
                     sessionId,
                     chatOnly: !toolTurn,
-                    afterToolResult: openClawContext.messages?.at(-1)?.role === "toolResult",
+                    afterToolResult: lastMessage?.role === "toolResult",
+                    afterSubagentCompletion,
                 });
                 agent = resolved.agent;
                 sentFullPrompt = shouldSendFullPrompt({

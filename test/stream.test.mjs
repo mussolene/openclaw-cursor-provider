@@ -99,6 +99,44 @@ test("tool handoffs rebuild canonical context without resuming the interrupted S
   }
 });
 
+test("subagent completions use canonical context while ordinary follow-ups still resume", async () => {
+  let prompt;
+  globalThis.__cursorStreamTestAgent = {
+    agentId: "completion-agent",
+    async send(value) {
+      prompt = value;
+      return { async *stream() {}, async wait() { return {status:"completed",result:"ACP_OK"}; }, supports() {return false;} };
+    },
+  };
+  const completion = "<<<BEGIN_OPENCLAW_INTERNAL_CONTEXT>>>\n[Internal task completion event]\nsource: subagent\nChild result: ACP_OK\n<<<END_OPENCLAW_INTERNAL_CONTEXT>>>";
+  try {
+    const streamFn = createCursorSdkStreamFn({resolveApiKey:()=>"test-key",resolveWorkspaceDir:()=>"/tmp"});
+    for (const content of [completion,[{type:"text",text:completion}]]) {
+      globalThis.__cursorStreamTestResumeCount = 0;
+      globalThis.__cursorStreamTestSession = {agentId:"completed-parent",bootstrapped:true,toolHandoffPending:false};
+      const result = await streamFn({id:"auto",api:"test",provider:"cursor",cost:{}},
+        {systemPrompt:"Review child result",messages:[{role:"user",content:"run ACP"},
+          {role:"assistant",content:[{type:"text",text:"ACP accepted"}]},{role:"user",content}]},
+        {sessionId:"completion-session"}).result;
+      assert.equal(result.stopReason,"stop");
+      assert.equal(globalThis.__cursorStreamTestResumeCount,0);
+      assert.match(prompt,/Review child result/);
+      assert.match(prompt,/run ACP/);
+      assert.match(prompt,/ACP accepted/);
+      assert.match(prompt,/Child result: ACP_OK/);
+    }
+    globalThis.__cursorStreamTestResumeCount = 0;
+    await streamFn({id:"auto",api:"test",provider:"cursor",cost:{}},
+      {messages:[{role:"user",content:"read another file"}]},{sessionId:"completion-session"}).result;
+    assert.equal(globalThis.__cursorStreamTestResumeCount,1);
+  } finally {
+    delete globalThis.__cursorStreamTestAgent;
+    delete globalThis.__cursorStreamTestSession;
+    delete globalThis.__cursorStreamTestResumeCount;
+    delete globalThis.__cursorStreamTestWrittenSession;
+  }
+});
+
 test("failed resume sends full system and history to the new agent", async () => {
   let prompt;
   globalThis.__cursorStreamTestSession = { agentId: "expired", bootstrapped: true };
