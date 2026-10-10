@@ -24,7 +24,10 @@ is stored under `~/.openclaw/cursor-provider` with owner-only permissions.
 ## Upstream Dependencies
 
 The plugin pins the official Cursor SDK and uses its transport dependencies.
-Cursor SDK 1.0.34 no longer depends on ConnectRPC Node or undici, so the
+Cursor SDK 1.0.37 no longer depends on ConnectRPC Node or undici, so the
 previous transitive dependency override is no longer necessary.
 CI and release checks must keep `npm audit` at zero known vulnerabilities.
-Dependabot remains enabled for both direct and transitive updates.
+Dependabot security updates are enabled. Routine npm and GitHub Actions
+version updates are grouped monthly, with at most one open version-update PR
+per ecosystem. Security updates are grouped separately and do not wait for
+the monthly version-update schedule.
