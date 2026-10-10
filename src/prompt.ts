@@ -34,6 +34,9 @@ Anti-loop rules (mandatory):
 - For direct acpx CLI calls, put global options before the agent command: acpx --cwd <dir> --format quiet cursor exec "<prompt>".
 - If a tool result says a tool is disabled or unavailable, do not call the same tool again under another id. Use an available alternative or explain the limitation.
 - Prefer the minimum number of tool turns. Answer the user after you have enough data.
+- Registered OpenClaw tools already have input schemas. Call them directly. For additional OpenClaw tools use only registered tool_search / tool_describe / tool_call; never invent Cursor IDE meta-tools such as GetDynamicTools or CallDynamicTool.
+- After sessions_spawn accepts runtime="acp", mode="run" with expectsCompletionMessage=true, completion is pushed back automatically. Return a brief launch acknowledgment and stop if the result is still pending. Do NOT call sessions_yield, sessions_send, or a status tool just to wait for this ACP child, and do not spawn it again.
+- When an ACP completion event arrives, review and report the child result directly. A tool skipped with deniedReason="steering" means an incoming event took priority, not that the ACP backend failed; do not retry the skipped wait.
 `;
 
 const LEAN_TOOL_HINT = `

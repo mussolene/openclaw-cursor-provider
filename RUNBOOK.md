@@ -46,6 +46,13 @@ including confirmed tool results. Completed tool-mode conversations can still
 resume on a later user turn. This can increase input context compared with an
 incremental prompt; it does not change the selected model.
 
+For a parent-owned ACP run accepted with `expectsCompletionMessage=true`, report
+the launch and let OpenClaw deliver completion automatically. Do not add
+`sessions_yield` or polling just to wait for that child. A skipped tool with
+`deniedReason=steering` means an incoming event took priority; it is not an ACP
+backend failure. Use registered OpenClaw discovery tools instead of Cursor IDE
+meta-tools such as `GetDynamicTools`.
+
 ### Smoke tests (isolated sessions — NOT live Telegram)
 
 ```bash
