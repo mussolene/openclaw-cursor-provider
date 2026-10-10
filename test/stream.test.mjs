@@ -16,14 +16,14 @@ const sdk = dataModule(`
   export class CursorAgentError extends Error {}
   export const Agent = {
     async create() { return globalThis.__cursorStreamTestAgent; },
-    async resume() { if (globalThis.__cursorStreamTestResumeFails) throw new Error("expired"); return globalThis.__cursorStreamTestAgent; }
+    async resume() { globalThis.__cursorStreamTestResumeCount = (globalThis.__cursorStreamTestResumeCount || 0) + 1; if (globalThis.__cursorStreamTestResumeFails) throw new Error("expired"); return globalThis.__cursorStreamTestAgent; }
   };
 `);
 const usage = dataModule((await readFile(new URL("../dist/src/usage.js", import.meta.url), "utf8")).replace('"openclaw/plugin-sdk/llm"', JSON.stringify(llm)));
 const sessionStore = dataModule(`
   export async function getCursorSession() { return globalThis.__cursorStreamTestSession; }
   export async function deleteCursorSession() {}
-  export async function upsertCursorSession() {}
+  export async function upsertCursorSession(record) { globalThis.__cursorStreamTestWrittenSession = record; }
 `);
 let source = await readFile(new URL("../dist/src/stream.js", import.meta.url), "utf8");
 source = source.replace('"@cursor/sdk"', JSON.stringify(sdk))
@@ -58,6 +58,47 @@ test("SDK result without deltas emits its text exactly once", async () => {
   }
 });
 
+test("tool handoffs rebuild canonical context without resuming the interrupted SDK run", async () => {
+  let prompt;
+  globalThis.__cursorStreamTestAgent = {
+    agentId: "fresh-agent",
+    async send(value) {
+      prompt = value;
+      return { async *stream() {}, async wait() { return {status:"completed",result:"TOOL_OK"}; }, supports() {return false;} };
+    },
+  };
+  try {
+    const streamFn = createCursorSdkStreamFn({resolveApiKey:()=>"test-key",resolveWorkspaceDir:()=>"/tmp"});
+    for (const pending of [undefined,true]) {
+      globalThis.__cursorStreamTestResumeCount = 0;
+      globalThis.__cursorStreamTestSession = {agentId:"interrupted-agent",bootstrapped:true,toolHandoffPending:pending};
+      const messages = [{role:"user",content:"run exec once"},
+        {role:"assistant",content:[{type:"toolCall",id:"call-1",name:"exec",arguments:{command:"printf TOOL_OK"}}]},
+        {role:"toolResult",toolName:"exec",toolCallId:"call-1",content:[{type:"text",text:"TOOL_OK"}],isError:false}];
+      const result = await streamFn({id:"auto",api:"test",provider:"cursor",cost:{}},
+        {systemPrompt:"Required instruction: never repeat a successful command",messages},
+        {sessionId:"handoff-session"}).result;
+      assert.equal(result.stopReason,"stop");
+      assert.equal(globalThis.__cursorStreamTestResumeCount,0);
+      assert.match(prompt,/Required instruction/);
+      assert.match(prompt,/run exec once/);
+      assert.match(prompt,/\[tool exec id=call-1\]\nTOOL_OK/);
+      assert.equal(globalThis.__cursorStreamTestWrittenSession.toolHandoffPending,false);
+    }
+    globalThis.__cursorStreamTestResumeCount = 0;
+    globalThis.__cursorStreamTestSession = {agentId:"interrupted-agent",bootstrapped:true,toolHandoffPending:true};
+    await streamFn({id:"auto",api:"test",provider:"cursor",cost:{}},
+      {systemPrompt:"Required instruction",messages:[{role:"user",content:"run a different command"}]},
+      {sessionId:"handoff-session"}).result;
+    assert.equal(globalThis.__cursorStreamTestResumeCount,0);
+  } finally {
+    delete globalThis.__cursorStreamTestAgent;
+    delete globalThis.__cursorStreamTestSession;
+    delete globalThis.__cursorStreamTestResumeCount;
+    delete globalThis.__cursorStreamTestWrittenSession;
+  }
+});
+
 test("failed resume sends full system and history to the new agent", async () => {
   let prompt;
   globalThis.__cursorStreamTestSession = { agentId: "expired", bootstrapped: true };
@@ -82,5 +123,33 @@ test("failed resume sends full system and history to the new agent", async () =>
     delete globalThis.__cursorStreamTestAgent;
     delete globalThis.__cursorStreamTestSession;
     delete globalThis.__cursorStreamTestResumeFails;
+    delete globalThis.__cursorStreamTestResumeCount;
+    delete globalThis.__cursorStreamTestWrittenSession;
+  }
+});
+
+test("a cancelled SDK tool handoff is recorded as non-resumable", async () => {
+  let cancelled = 0;
+  globalThis.__cursorStreamTestAgent = {
+    agentId:"handoff-agent",
+    async send(_prompt,options) {
+      options.onStep({step:{type:"toolCall",callId:"sdk-call-1",message:{type:"mcp",
+        args:{providerIdentifier:"custom-user-tools",toolName:"exec",args:{command:"printf TOOL_OK"}}}}});
+      return {async *stream(){},async cancel(){cancelled++;},supports(){return false;}};
+    },
+  };
+  try {
+    const streamFn=createCursorSdkStreamFn({resolveApiKey:()=>"test-key",resolveWorkspaceDir:()=>"/tmp"});
+    const result=await streamFn({id:"auto",api:"test",provider:"cursor",cost:{}},
+      {messages:[{role:"user",content:"run exec once"}],tools:[{name:"exec",description:"Execute a command",
+        parameters:{type:"object",properties:{command:{type:"string"}}}}]},
+      {sessionId:"test-handoff"}).result;
+    assert.equal(result.stopReason,"toolUse");
+    assert.equal(cancelled,1);
+    assert.equal(globalThis.__cursorStreamTestWrittenSession.toolHandoffPending,true);
+    assert.equal(result.content.find(part=>part.type==="toolCall").name,"exec");
+  } finally {
+    delete globalThis.__cursorStreamTestAgent;
+    delete globalThis.__cursorStreamTestWrittenSession;
   }
 });

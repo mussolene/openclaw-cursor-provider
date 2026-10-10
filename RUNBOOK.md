@@ -39,6 +39,13 @@ If follow-up pong stays above 5K tokens, remaining cost is **Cursor Agent API fl
 
 Chat-only turns use fresh `Agent.create` (no `Agent.resume`) to avoid cumulative Cursor transcript growth.
 
+Tool handoffs also use a fresh SDK agent for the next step. OpenClaw cancels the
+SDK run before executing a tool, so its interrupted native transcript must not
+be resumed. The next agent receives the full canonical OpenClaw history,
+including confirmed tool results. Completed tool-mode conversations can still
+resume on a later user turn. This can increase input context compared with an
+incremental prompt; it does not change the selected model.
+
 ### Smoke tests (isolated sessions — NOT live Telegram)
 
 ```bash

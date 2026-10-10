@@ -114,11 +114,14 @@ async function resolveAgent(params: {
   cwd: string;
   sessionId?: string;
   chatOnly?: boolean;
+  afterToolResult?: boolean;
 }): Promise<{ agent: SDKAgent; resumed: boolean }> {
   const options = buildCursorAgentOptions(params);
   if (!params.chatOnly && params.sessionId) {
     const existing = await getCursorSession(params.sessionId);
-    if (existing?.agentId) {
+    // A cancelled SDK tool run retains an interrupted native tool transcript.
+    // Rebuild from OpenClaw's canonical messages instead of resuming that run.
+    if (existing?.agentId && !existing.toolHandoffPending && !params.afterToolResult) {
       try {
         return { agent: await Agent.resume(existing.agentId, options), resumed: true };
       } catch {
@@ -135,6 +138,7 @@ async function touchSession(
   agentId: string,
   modelId: string,
   bootstrapped?: boolean,
+  toolHandoffPending = false,
 ): Promise<void> {
   if (!sessionId) return;
   const existing = await getCursorSession(sessionId);
@@ -145,6 +149,7 @@ async function touchSession(
     lastUsedAt: Date.now(),
     modelId,
     bootstrapped: bootstrapped ?? existing?.bootstrapped,
+    toolHandoffPending,
   });
 }
 
@@ -366,6 +371,7 @@ export function createCursorSdkStreamFn(params: CursorStreamFnOptions): StreamFn
           cwd,
           sessionId,
           chatOnly: !toolTurn,
+          afterToolResult: openClawContext.messages?.at(-1)?.role === "toolResult",
         });
         agent = resolved.agent;
 
@@ -501,7 +507,7 @@ export function createCursorSdkStreamFn(params: CursorStreamFnOptions): StreamFn
         if (agent && sessionId) {
           const bootstrapped = (resolved.resumed && sessionRecord?.bootstrapped === true) || (toolTurn && sentFullPrompt && pendingStop.kind !== "error");
           if (toolTurn) {
-            await touchSession(sessionId, agent.agentId, modelId, bootstrapped);
+            await touchSession(sessionId, agent.agentId, modelId, bootstrapped, pendingStop.kind === "toolUse");
           } else if (sessionRecord) {
             await upsertCursorSession({
               ...sessionRecord,

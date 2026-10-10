@@ -68,7 +68,9 @@ async function resolveAgent(params) {
     const options = buildCursorAgentOptions(params);
     if (!params.chatOnly && params.sessionId) {
         const existing = await getCursorSession(params.sessionId);
-        if (existing?.agentId) {
+        // A cancelled SDK tool run retains an interrupted native tool transcript.
+        // Rebuild from OpenClaw's canonical messages instead of resuming that run.
+        if (existing?.agentId && !existing.toolHandoffPending && !params.afterToolResult) {
             try {
                 return { agent: await Agent.resume(existing.agentId, options), resumed: true };
             }
@@ -79,7 +81,7 @@ async function resolveAgent(params) {
     }
     return { agent: await Agent.create(options), resumed: false };
 }
-async function touchSession(sessionId, agentId, modelId, bootstrapped) {
+async function touchSession(sessionId, agentId, modelId, bootstrapped, toolHandoffPending = false) {
     if (!sessionId)
         return;
     const existing = await getCursorSession(sessionId);
@@ -90,6 +92,7 @@ async function touchSession(sessionId, agentId, modelId, bootstrapped) {
         lastUsedAt: Date.now(),
         modelId,
         bootstrapped: bootstrapped ?? existing?.bootstrapped,
+        toolHandoffPending,
     });
 }
 const TURN_ENDED_DRAIN_MS = 8_000;
@@ -294,6 +297,7 @@ export function createCursorSdkStreamFn(params) {
                     cwd,
                     sessionId,
                     chatOnly: !toolTurn,
+                    afterToolResult: openClawContext.messages?.at(-1)?.role === "toolResult",
                 });
                 agent = resolved.agent;
                 sentFullPrompt = shouldSendFullPrompt({
@@ -426,7 +430,7 @@ export function createCursorSdkStreamFn(params) {
                 if (agent && sessionId) {
                     const bootstrapped = (resolved.resumed && sessionRecord?.bootstrapped === true) || (toolTurn && sentFullPrompt && pendingStop.kind !== "error");
                     if (toolTurn) {
-                        await touchSession(sessionId, agent.agentId, modelId, bootstrapped);
+                        await touchSession(sessionId, agent.agentId, modelId, bootstrapped, pendingStop.kind === "toolUse");
                     }
                     else if (sessionRecord) {
                         await upsertCursorSession({

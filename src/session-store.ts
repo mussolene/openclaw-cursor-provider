@@ -10,6 +10,8 @@ export interface CursorSessionRecord {
   modelId?: string;
   /** First full OpenClaw system prompt already sent to this Cursor agent. */
   bootstrapped?: boolean;
+  /** SDK run was cancelled to hand a tool call to OpenClaw. */
+  toolHandoffPending?: boolean;
 }
 
 type SessionStoreFile = {
